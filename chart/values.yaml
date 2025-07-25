@@ -1,0 +1,7 @@
+envName: test-env
+
+infra:
+
+apps:
+
+datastores:

@@ -1,0 +1,12 @@
+mutliple sources
+
+aws-loadbalancer-controller
+coralogix-otel-integration
+coralogix
+
+
+syncwave(can be maanged through dictionary->0,1,2,3,10)
+namespacetoInstallIn(difficult)
+multiplesouces(can be managed)
+syncpolicy(conflicts 5 places can be managed)
+path(a couple of issues privateAI hopefully manageable)
