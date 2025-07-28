@@ -1,0 +1,22 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: directory-service
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:your-org/helm.git/directory-service
+    path: directory-service
+    targetRevision: main
+    helm:
+      valueFiles: []
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: directory-service
+  syncPolicy:
+    automated:
+        selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  syncWave: 0

@@ -1,0 +1,17 @@
+envName: test-env
+apps:
+  directory-service:
+    enabled: true
+    injectEnvSpecificOverride: false
+
+  pgsql:
+    enabled: true
+    injectEnvSpecificOverride: true
+    name: testing
+    targetRevision: feat/branch
+    syncWave: 2
+    repoURL: https://kubernetes.com
+    server: hello.com
+    valueFiles:
+      - values.yaml
+      - values1.yaml
