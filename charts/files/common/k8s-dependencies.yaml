@@ -2,19 +2,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: pgsql # cannot be changed
+  name: k8s-dependencies # cannot be changed
 spec:
   project: default # cannot be changed
   source:
-    repoURL: git@github.com:your-org/helm.git/pg-sql
-    path: pgsql
+    repoURL: git@github.com:your-org/helm.git
+    path: k8s-dependencies
     targetRevision: main
     helm:
       valueFiles: 
         - values.yaml 
   destination:
     server: https://kubernetes.default.svc # cannot be changed
-    namespace: pgsql 
+    namespace: kube-system
   syncPolicy:
     automated:
         selfHeal: true

@@ -1,0 +1,23 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: google-cas-issuer # cannot be changed
+spec:
+  project: google # cannot be changed
+  source:
+    repoURL: git@github.com:your-org/helm.git
+    path: google-cas-issuer
+    targetRevision: main
+    helm:
+      valueFiles: 
+        - values9.yaml 
+  destination:
+    server: https://kubernetes.default.svc # cannot be changed
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  syncWave: 0

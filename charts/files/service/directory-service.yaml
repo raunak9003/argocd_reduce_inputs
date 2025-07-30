@@ -2,18 +2,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: directory-service
+  name: directory-service # cannot be changed
 spec:
-  project: default
+  project: default # cannot be changed
   source:
-    repoURL: git@github.com:your-org/helm.git/directory-service
+    repoURL: git@github.com:your-org/helm.git
     path: directory-service
     targetRevision: main
     helm:
-      valueFiles: []
+      valueFiles: 
+        - values.yaml 
   destination:
-    server: https://kubernetes.default.svc
-    namespace: directory-service
+    server: https://kubernetes.default.svc # cannot be changed
+    namespace: platform
   syncPolicy:
     automated:
         selfHeal: true

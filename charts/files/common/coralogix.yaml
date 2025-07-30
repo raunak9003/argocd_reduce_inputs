@@ -1,0 +1,26 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: coralogix # cannot be changed
+spec:
+  project: default # cannot be changed
+  sources:
+    - chart: coralogix-operator
+      helm:
+        valueFiles:
+          - $values/coralogix-operator/values.yaml
+      repoURL: https://cgx.jfrog.io/artifactory/coralogix-charts-virtual
+      targetRevision: 0.4.4
+    - ref: values
+      repoURL: git@github.com:skyflowapi/helm.git
+      targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc # cannot be changed
+    namespace: coralogix
+  syncPolicy:
+    automated:
+        selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  syncWave: 0

@@ -1,0 +1,49 @@
+{{- $dict := dict }}
+{{- if eq .Values.cloud.provider "gcp" }}
+  {{- $_ := set $dict "infraApps" (get .Values.cloud.gcp "infraApps") }}
+{{- else }}
+  {{- $_ := set $dict "infraApps" (get .Values.cloud.aws "infraApps") }}
+{{- end }}
+{{- $_ := set $dict "datastores" (get .Values.argoApps "datastores") }}
+{{- $_ := set $dict "service" (get .Values.argoApps "service") }}
+{{- $_ := set $dict "common" (get .Values.argoApps "common") }}
+
+{{- range $groupName, $group := $dict }}
+  {{- range $appName, $appCfg := $group }}
+    {{- if and $appCfg.enabled $appCfg.multisource }}
+      {{- $file := "" }}  
+      {{- $provider := default "aws" $.Values.cloud.provider }}
+      {{- $file = printf "files/%s/%s.yaml" (ternary $provider $groupName (eq $groupName "infraApps")) $appName }}
+      {{- $rendered := tpl ($.Files.Get $file) $ }}
+      {{- $app := fromYaml $rendered }}
+
+        {{- if $appCfg.injectEnvSpecificOverride }}
+          {{- $spec := get $app "spec" | default dict }}
+          {{- $sources := get $spec "sources" | default dict }}
+          {{- $dest := get $spec "destination" | default dict }}
+          {{- $syncPolicy := get $spec "syncPolicy" | default dict }}
+          {{- $automated := get $syncPolicy "automated" | default dict }}
+
+          {{- with $appCfg.syncWave }}{{ $_ := set $spec "syncWave" . }}{{ end }}
+          {{- $_ := set $dest "server" $.Values.k8sAPIServer }}
+          {{- with $appCfg.namespace }}{{ $_ := set $dest "namespace" . }}{{ end }}
+          {{- with $appCfg.selfHeal }}{{ $_ := set $automated "selfHeal" . }}{{ end }}
+          {{- with $appCfg.syncOptions }}{{ $_ := set $syncPolicy "syncOptions" . }}{{ end }}
+          {{- with $appCfg.sources }}{{ $_ := set $spec "sources" . }}{{ end }}
+
+          {{- if $appCfg.selfHeal }}
+            {{- $_ := set $syncPolicy "automated" $automated }}
+          {{- end }}
+
+          {{- $_ := set $spec "destination" $dest }}
+          {{- $_ := set $spec "syncPolicy" $syncPolicy }}
+          {{- $_ := set $app "spec" $spec }}
+
+
+
+      {{- end }}
+---
+{{ toYaml $app }}      
+    {{- end }}
+  {{- end }}
+{{- end }}

@@ -1,17 +1,85 @@
 envName: test-env
-apps:
-  directory-service:
-    enabled: true
-    injectEnvSpecificOverride: false
-
-  pgsql:
-    enabled: true
-    injectEnvSpecificOverride: true
-    name: testing
-    targetRevision: feat/branch
-    syncWave: 2
-    repoURL: https://kubernetes.com
-    server: hello.com
-    valueFiles:
-      - values.yaml
-      - values1.yaml
+k8sAPIServer: https://653D0808A707D2D0DCCA8F8FDE7B2DE1.gr7.us-east-2.eks.amazonaws.com
+cloud:
+  provider: aws
+  gcp:
+    infraApps:
+      google-cas-issuer:
+        enabled: true
+        injectEnvSpecificOverride: true
+        name: testing 
+        syncWave: 2 
+        repoURL: https://kubernetes.com
+        valueFiles:
+         - values.yaml
+  aws:
+    infraApps:
+      cluster-autoscaler:
+        enabled: true
+        injectEnvSpecificOverride: true
+        name: clustu
+        syncWave: 9 
+        repoURL: https://kubernetes.com
+        server: hii.com
+      aws-loadbalancer-controller:
+        enabled: true
+        injectEnvSpecificOverride: false
+        multisource: true
+        name: clustu
+        syncWave: 9 
+        sources:
+         - chart: otel-integration
+           helm:
+             valueFiles:
+               - $values/coralogix/values.yaml
+               - $values/coralogix/values2.yaml
+           repoURL: https://cgx.jfrog.io/artifactory/coralogix-charts-virtual
+           targetRevision: 0.0.9
+         - ref: values
+           repoURL: git@github.com:skyflowapi/helm.git
+           targetRevision: main 
+argoApps:
+  datastores:
+    pgsql:
+      enabled: true
+      injectEnvSpecificOverride: true
+      name: pgu
+      syncWave: 10 
+      repoURL: https://kubernetes.com
+      server: ola.com
+  common:
+    coralogix:
+      enabled: true
+      injectEnvSpecificOverride: true
+      multisource: true
+      name: coru
+      syncWave: 10 
+      sources:
+       - chart: otel-integration
+         helm:
+           valueFiles:
+             - $values/coralogix/values.yaml
+             - $values/coralogix/values2.yaml
+         repoURL: https://cgx.jfrog.io/artifactory/coralogix-charts-virtual
+         targetRevision: 0.0.9
+       - ref: values
+         repoURL: git@github.com:skyflowapi/helm.git
+         targetRevision: main 
+    coralogix-otel-integration:
+      enabled: true
+      injectEnvSpecificOverride: true
+      multisource: true
+      name: coru
+      syncWave: 7 
+      sources:
+       - chart: otel-integration
+         helm:
+           valueFiles:
+             - $values/coralogix/values.yaml
+             - $values/coralogix/values4.yaml
+         repoURL: https://cgx.jfrog.io/artifactory/coralogix-otel-charts-virtual
+         targetRevision: 9.9.9
+       - ref: values
+         repoURL: git@github.com:skyflowapi/helm.git
+         targetRevision: 1.1.1
+  service:
