@@ -60,3 +60,10 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Recursive helper to set a value at a nested path inside a YAML object.
+
+Usage:
+{{ include "mychart.setField" (dict "obj" $baseApp "path" (list "spec" "source" "targetRevision") "value" "my-value") }}
+*/}}

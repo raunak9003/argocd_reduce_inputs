@@ -1,99 +1,56 @@
-{{- range $groupName, $group := dict "apps" .Values.apps }}
+{{- $dict := dict }}
+{{- if eq .Values.cloud.provider "gcp" }}
+  {{- $_ := set $dict "infraApps" (get .Values.cloud.gcp "infraApps") }}
+{{- else }}
+  {{- $_ := set $dict "infraApps" (get .Values.cloud.aws "infraApps") }}
+{{- end }}
+{{- $_ := set $dict "datastores" (get .Values.argoApps "datastores") }}
+{{- $_ := set $dict "service" (get .Values.argoApps "service") }}
+{{- $_ := set $dict "common" (get .Values.argoApps "common") }}
+{{- range $groupName, $group := $dict }}
   {{- range $appName, $appCfg := $group }}
-    {{- if $appCfg.enabled }}
-      {{- $fileContent := $.Files.Get (printf "files/%s.yaml" $appName) }}
-      {{- $rendered := tpl $fileContent $ }}
-      {{- $baseApp := fromYaml $rendered }}
-
+    {{- if and $appCfg.enabled (or (not $appCfg.multisource) (not (hasKey $appCfg "multisource"))) }}
+      {{- $file := "" }}  
+      {{- $provider := default "aws" $.Values.cloud.provider }}
+      {{- $file = printf "files/%s/%s.yaml" (ternary $provider $groupName (eq $groupName "infraApps")) $appName }}
+      {{- $rendered := tpl ($.Files.Get $file) $ }}
+      {{- $app := fromYaml $rendered }}
       {{- if $appCfg.injectEnvSpecificOverride }}
+        {{- $spec := get $app "spec" | default dict }}
+        {{- $source := get $spec "source" | default dict }}
+        {{- $dest := get $spec "destination" | default dict }}
+        {{- $syncPolicy := get $spec "syncPolicy" | default dict }}
+        {{- $automated := get $syncPolicy "automated" | default dict }}
+        {{- $helm := get $source "helm" | default dict }}
 
-        {{/* Override .spec.source.targetRevision */}}
-        {{- if hasKey $appCfg "targetRevision" }}
-          {{- $spec := get $baseApp "spec" | default (dict) }}
-          {{- $source := get $spec "source" | default (dict) }}
-          {{- $_ := set $source "targetRevision" $appCfg.targetRevision }}
-          {{- $_ := set $spec "source" $source }}
-          {{- $_ := set $baseApp "spec" $spec }}
-        {{- end }}
-
-        {{/* Override .spec.source.repoURL */}}
-        {{- if hasKey $appCfg "repoURL" }}
-          {{- $spec := get $baseApp "spec" | default (dict) }}
-          {{- $source := get $spec "source" | default (dict) }}
-          {{- $_ := set $source "repoURL" $appCfg.repoURL }}
-          {{- $_ := set $spec "source" $source }}
-          {{- $_ := set $baseApp "spec" $spec }}
-        {{- end }}
-
-        {{/* Override .spec.source.path */}}
-        {{- if hasKey $appCfg "path" }}
-          {{- $spec := get $baseApp "spec" | default (dict) }}
-          {{- $source := get $spec "source" | default (dict) }}
-          {{- $_ := set $source "path" $appCfg.path }}
-          {{- $_ := set $spec "source" $source }}
-          {{- $_ := set $baseApp "spec" $spec }}
-        {{- end }}
-
-        {{/* Override .spec.source.helm.valueFiles */}}
-        {{- if hasKey $appCfg "valueFiles" }}
-          {{- $spec := get $baseApp "spec" | default (dict) }}
-          {{- $source := get $spec "source" | default (dict) }}
-          {{- $helm := get $source "helm" | default (dict) }}
-          {{- $_ := set $helm "valueFiles" $appCfg.valueFiles }}
-          {{- $_ := set $source "helm" $helm }}
-          {{- $_ := set $spec "source" $source }}
-          {{- $_ := set $baseApp "spec" $spec }}
-        {{- end }}
-
-        {{/* Override .spec.syncWave */}}
-        {{- if hasKey $appCfg "syncWave" }}
-          {{- $spec := get $baseApp "spec" | default (dict) }}
-          {{- $_ := set $spec "syncWave" $appCfg.syncWave }}
-          {{- $_ := set $baseApp "spec" $spec }}
-        {{- end }}
-
-        {{/* Override .spec.destination.server */}}
-        {{- if hasKey $appCfg "server" }}
-          {{- $spec := get $baseApp "spec" | default (dict) }}
-          {{- $destination := get $spec "destination" | default (dict) }}
-          {{- $_ := set $destination "server" $appCfg.server }}
-          {{- $_ := set $spec "destination" $destination }}
-          {{- $_ := set $baseApp "spec" $spec }}
-        {{- end }}
-
-        {{/* Override .spec.destination.namespace */}}
-        {{- if hasKey $appCfg "namespace" }}
-          {{- $spec := get $baseApp "spec" | default (dict) }}
-          {{- $destination := get $spec "destination" | default (dict) }}
-          {{- $_ := set $destination "namespace" $appCfg.namespace }}
-          {{- $_ := set $spec "destination" $destination }}
-          {{- $_ := set $baseApp "spec" $spec }}
-        {{- end }}
-
-        {{- /* Override .spec.syncPolicy.automated.selfHeal */}}
-        {{- if hasKey $appCfg "selfHeal" }}
-          {{- $spec := get $baseApp "spec" | default (dict) }}
-          {{- $syncPolicy := get $spec "syncPolicy" | default (dict) }}
-          {{- $automated := get $syncPolicy "automated" | default (dict) }}
-          {{- $_ := set $automated "selfHeal" $appCfg.selfHeal }}
-          {{- $_ := set $syncPolicy "automated" $automated }}
-          {{- $_ := set $spec "syncPolicy" $syncPolicy }}
-          {{- $_ := set $baseApp "spec" $spec }}
-        {{- end }}
+        {{- with $appCfg.targetRevision }}{{ $_ := set $source "targetRevision" . }}{{ end }}
+        {{- with $appCfg.repoURL }}       {{ $_ := set $source "repoURL" . }}{{ end }}
+        {{- with $appCfg.path }}          {{ $_ := set $source "path" . }}{{ end }}
         
-        {{- /* Override .spec.syncPolicy.syncOptions */}}
-        {{- if hasKey $appCfg "syncOptions" }}
-          {{- $spec := get $baseApp "spec" | default (dict) }}
-          {{- $syncPolicy := get $spec "syncPolicy" | default (dict) }}
-          {{- $_ := set $syncPolicy "syncOptions" $appCfg.syncOptions }}
-          {{- $_ := set $spec "syncPolicy" $syncPolicy }}
-          {{- $_ := set $baseApp "spec" $spec }}
+        {{- $values := get $helm "valueFiles" | default list }}
+        {{- if hasKey $appCfg "valueFiles" }}{{ $values = $appCfg.valueFiles }}{{ end }}
+        {{- $values = append $values (printf "%s-values.yaml" $.Values.envName) }}
+        {{- if gt (len $values) 0 }}{{ $_ := set $helm "valueFiles" $values }}{{ end }}
+
+        {{- $_ := set $source "helm" $helm }}
+        {{- with $appCfg.syncWave }}{{ $_ := set $spec "syncWave" . }}{{ end }}
+        {{ $_ := set $dest "server" $.Values.k8sAPIServer }}
+        {{- with $appCfg.namespace }}{{ $_ := set $dest "namespace" . }}{{ end }}
+        {{- with $appCfg.selfHeal }} {{ $_ := set $automated "selfHeal" . }}{{ end }}
+        {{- with $appCfg.syncOptions }}{{ $_ := set $syncPolicy "syncOptions" . }}{{ end }}
+
+        {{- if $appCfg.selfHeal }}
+          {{- $_ := set $syncPolicy "automated" $automated }}
         {{- end }}
 
+        {{- $_ := set $spec "source" $source }}
+        {{- $_ := set $spec "destination" $dest }}
+        {{- $_ := set $spec "syncPolicy" $syncPolicy }}
+        {{- $_ := set $app "spec" $spec }}
       {{- end }}
 
 ---
-      {{ toYaml $baseApp }}
+      {{- toYaml $app }}
     {{- end }}
   {{- end }}
 {{- end }}

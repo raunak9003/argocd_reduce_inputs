@@ -1,0 +1,26 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aws-loadbalancer-controller # cannot be changed
+spec:
+  project: default # cannot be changed
+  sources:
+    - chart: otel-integration
+      helm:
+        valueFiles:
+          - $values/coralogix/values.yaml
+      repoURL: https://cgx.jfrog.io/artifactory/coralogix-charts-virtual
+      targetRevision: 0.0.94
+    - ref: values
+      repoURL: git@github.com:skyflowapi/helm.git
+      targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc # cannot be changed
+    namespace: kube-system
+  syncPolicy:
+    automated:
+        selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  syncWave: 0

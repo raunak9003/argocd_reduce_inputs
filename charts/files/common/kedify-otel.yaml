@@ -1,0 +1,23 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kedify-otel # cannot be changed
+spec:
+  project: default # cannot be changed
+  source:
+    repoURL: git@github.com:your-org/helm.git
+    path: kedify-otel
+    targetRevision: main
+    helm:
+      valueFiles: 
+        - values.yaml 
+  destination:
+    server: https://kubernetes.default.svc # cannot be changed
+    namespace: keda
+  syncPolicy:
+    automated:
+        selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  syncWave: 0
